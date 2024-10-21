@@ -18,7 +18,7 @@ export default async function Home() {
         <div className="flex gap-4 justify-between">
           <div className="flex flex-col items-start">
             <h4>Welcome,</h4>
-            <h4> {user?.email || 'Guest'}</h4>
+            <h4> {user?.user_metadata?.username || user?.email || 'Guest'}</h4>
           </div>
           {user ? <LogoutButton /> : <LoginButton />}
         </div>

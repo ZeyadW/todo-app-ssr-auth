@@ -14,7 +14,7 @@ import { LoginForm } from '@/types/auth';
 
 import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { signup } from '@/actions';
 
 function Login() {
@@ -35,9 +35,17 @@ function Login() {
         <CardContent>
           <div className="space-y-4">
             <Input
-              {...register('email', { required: 'Email is required' })}
+              {...register('username', { required: 'Username is required' })}
               type="text"
               placeholder="Username"
+              required
+            />
+            {errors.username && <span>{errors.username.message}</span>}
+            <Input
+              {...register('email', { required: 'Email is required' })}
+              type="text"
+              placeholder="Email"
+              required
             />
             {errors.email && <span>{errors.email.message}</span>}
             <Input
@@ -47,6 +55,8 @@ function Login() {
                 required: 'Password is required',
                 minLength: 6,
               })}
+              required
+              minLength={6}
             />
             {errors.password && <span>{errors.password.message}</span>}
           </div>
