@@ -1,44 +1,59 @@
-'use client';
-import { useForm } from 'react-hook-form';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { useCreateTodo } from '@/hooks/useTodos';
+import {createClient} from '@/lib/supabase/server';
+import {Button} from './ui/button';
+import {Input} from './ui/input';
+// import {addTodo} from '@/actions';
+import {revalidatePath} from 'next/cache';
+import {redirect} from 'next/navigation';
 
 interface TodoForm {
   title: string;
 }
 
 export const TodoForm: React.FC = () => {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<TodoForm>();
+  // const createTodoMutation = useCreateTodo();
 
-  const createTodoMutation = useCreateTodo();
+  // const onSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const formData = new FormData(e.target);
+  //   const res = await addTodo(formData);
+  //   console.log(res);
+  //   formData.reset();
+  // };
+  async function addTodo(formData: FormData) {
+    'use server';
 
-  const onSubmit = (data: TodoForm) => {
-    createTodoMutation.mutate(data, {
-      onSuccess: () => {
-        reset();
-      },
-    });
-  };
+    const title = formData.get('title');
+    const supabase = createClient();
+
+    const {
+      data: {user},
+      error: getUserError,
+    } = await supabase.auth.getUser();
+
+    if (getUserError) throw getUserError;
+
+    const {error: supabaseError} = await supabase
+      .from('todos')
+      .insert([{title: title, user_id: user?.id}]);
+
+    if (supabaseError) throw supabaseError;
+
+    revalidatePath('/', 'layout');
+    redirect('/?timestamp=' + Date.now());
+  }
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form action={addTodo}>
       <div className="flex gap-2 ">
         <div className="w-full">
           <Input
-            {...register('title', { required: 'Title is required' })}
+            type="text"
+            name="title"
             placeholder="New todo"
+            key={Math.random()}
           />
-          {errors?.title && <span>{errors?.title?.message}</span>}
         </div>
 
-        <Button type="submit" disabled={createTodoMutation?.isPending}>
-          {createTodoMutation.isPending ? 'Adding...' : 'Add Todo'}
-        </Button>
+        <Button type="submit">Add Todo</Button>
       </div>
     </form>
   );

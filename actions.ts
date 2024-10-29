@@ -1,10 +1,10 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { actionClient } from './lib/safe-action';
-import { z } from 'zod';
+import {createClient} from '@/lib/supabase/server';
+import {revalidatePath} from 'next/cache';
+import {redirect} from 'next/navigation';
+import {actionClient} from './lib/safe-action';
+import {z} from 'zod';
 
 export async function login(formData: FormData) {
   const supabase = createClient();
@@ -16,7 +16,7 @@ export async function login(formData: FormData) {
     password: formData.get('password') as string,
   };
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  const {error} = await supabase.auth.signInWithPassword(data);
 
   if (error) {
     redirect('/login?message=Could not authenticate user');
@@ -41,7 +41,7 @@ export async function signup(formData: FormData) {
     },
   };
 
-  const { error } = await supabase.auth.signUp(data);
+  const {error} = await supabase.auth.signUp(data);
 
   if (error) {
     redirect('/error');
@@ -57,10 +57,10 @@ const schema = z.object({
 
 export const signupWithGithub = actionClient
   .schema(schema)
-  .action(async ({ parsedInput: { redirectTo } }) => {
+  .action(async ({parsedInput: {redirectTo}}) => {
     const supabase = createClient();
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const {data, error} = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
         redirectTo: `${redirectTo}/auth/callback`,
@@ -80,7 +80,7 @@ export const signupWithGithub = actionClient
 export const logout = actionClient.action(async () => {
   const supabase = createClient();
 
-  const { error } = await supabase.auth.signOut();
+  const {error} = await supabase.auth.signOut();
 
   if (error) {
     redirect('/error');
@@ -89,3 +89,26 @@ export const logout = actionClient.action(async () => {
   revalidatePath('/', 'layout');
   redirect('/login');
 });
+
+const addTodoSchema = z.object({
+  title: z.string(),
+});
+
+export const addTodo = async (formData) => {
+  const title = formData.get('title');
+  const supabase = createClient();
+  const {
+    data: {user},
+    error: getUserError,
+  } = await supabase.auth.getUser();
+
+  if (getUserError) throw getUserError;
+
+  const {error: supabaseError} = await supabase
+    .from('todos')
+    .insert([{title: title, user_id: user?.id}]);
+
+  if (supabaseError) throw supabaseError;
+
+  revalidatePath('/', 'layout');
+};
